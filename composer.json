@@ -1,5 +1,5 @@
 {
-    "name": "giginc/mongodb",
+    "name": "edsol/mongodb-cakephp",
     "description": "An Mongodb datasource for CakePHP 3.0",
     "type": "cakephp-plugin",
     "require": {
@@ -14,14 +14,14 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "giginc",
-            "email": "dev@giginc.co.jp"
+            "name": "Edsol",
+            "email": "contact@edsol.dev"
         }
     ],
     "autoload": {
         "psr-4": {
-            "Giginc\\Mongodb\\": "src",
-            "Giginc\\Mongodb\\Test\\": "tests"
+            "Edsol\\Mongodb\\": "src",
+            "Edsol\\Mongodb\\Test\\": "tests"
         }
     }
 }

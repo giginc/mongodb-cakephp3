@@ -1,8 +1,8 @@
 <?php
 
-namespace Giginc\Mongodb\Database\Schema;
+namespace Edsol\Mongodb\Database\Schema;
 
-use Giginc\Mongodb\Database\Driver\Mongodb;
+use Edsol\Mongodb\Database\Driver\Mongodb;
 use Cake\Database\Schema\TableSchema;
 
 class MongoSchema

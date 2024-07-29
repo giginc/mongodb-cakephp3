@@ -1,6 +1,6 @@
 <?php
 
-namespace Giginc\Mongodb\ORM;
+namespace Edsol\Mongodb\ORM;
 
 use Cake\Utility\Hash;
 use MongoDB\Collection;
@@ -58,6 +58,25 @@ class MongoFinder
         }
     }
 
+    public static function translateNestedArray(&$conditions)
+    {
+        $and = isset($conditions['$and']) ? (array)$conditions['$and'] : [];
+        foreach ($conditions as $key => $value) {
+            if (is_numeric($key) && is_array($value)) {
+                unset($conditions[$key]);
+                $and[] = $value;
+            } elseif (is_array($value) && !in_array(strtoupper($key), ['OR', '$OR', 'AND', '$AND'])) {
+                self::translateNestedArray($conditions[$key]);
+            }
+        }
+        if (!empty($and)) {
+            $conditions['$and'] = $and;
+            foreach (array_keys($conditions['$and']) as $key) {
+                self::translateNestedArray($conditions['$and'][$key]);
+            }
+        }
+    }
+
     /**
      * Convert ['foo' => 'bar', ['baz' => true]]
      * to
@@ -66,21 +85,7 @@ class MongoFinder
      */
     private function __translateNestedArray(&$conditions)
     {
-        $and = isset($conditions['$and']) ? (array)$conditions['$and'] : [];
-        foreach ($conditions as $key => $value) {
-            if (is_numeric($key) && is_array($value)) {
-                unset($conditions[$key]);
-                $and[] = $value;
-            } elseif (is_array($value) && !in_array(strtoupper($key), ['OR', '$OR', 'AND', '$AND'])) {
-                $this->__translateNestedArray($conditions[$key]);
-            }
-        }
-        if (!empty($and)) {
-            $conditions['$and'] = $and;
-            foreach (array_keys($conditions['$and']) as $key) {
-                $this->__translateNestedArray($conditions['$and'][$key]);
-            }
-        }
+        return self::translateNestedArray($conditions);
     }
 
     /**
@@ -117,17 +122,22 @@ class MongoFinder
      */
     private function __translateConditions(&$conditions)
     {
+        return self::translateConditions($conditions);
+    }
+
+    public static function translateConditions(&$conditions)
+    {
         $operators = '<|>|<=|>=|!=|=|<>|IN|LIKE';
         foreach ($conditions as $key => $value) {
             if (is_numeric($key) && is_array($value)) {
-                $this->__translateConditions($conditions[$key]);
+                self::translateConditions($conditions[$key]);
             } elseif (preg_match("/^(.+) ($operators)$/", $key, $matches)) {
                 list(, $field, $operator) = $matches;
                 if (substr($field, -3) === 'NOT') {
-                    $field = substr($field, 0, strlen($field) -4);
-                    $operator = 'NOT '.$operator;
+                    $field = substr($field, 0, strlen($field) - 4);
+                    $operator = 'NOT ' . $operator;
                 }
-                $operator = $this->__translateOperator(strtoupper($operator));
+                $operator = self::translateOperator(strtoupper($operator));
                 unset($conditions[$key]);
                 if (substr($operator, -4) === 'LIKE') {
                     $value = str_replace('%', '.*', $value);
@@ -149,15 +159,17 @@ class MongoFinder
                     } else {
                         $conditions[$operator][$nestedKey] = $nestedValue;
                     }
-                    $this->__translateConditions($conditions[$operator][$nestedKey]);
+                    self::translateConditions($conditions[$operator][$nestedKey]);
                 }
-            } elseif (preg_match("/^(.+) (<|>|<=|>=|!=|=) (.+)$/", $key, $matches)
+            } elseif (
+                preg_match("/^(.+) (<|>|<=|>=|!=|=) (.+)$/", $key, $matches)
                 || (is_string($value) && preg_match("/^(.+) (<|>|<=|>=|!=|=) (.+)$/", $value, $matches))
             ) {
                 unset($conditions[$key]);
                 array_splice($matches, 0, 1);
                 $conditions['$where'] = implode(' ', array_map(function ($v) {
-                    if (preg_match("/^[\w.]+$/", $v)
+                    if (
+                        preg_match("/^[\w.]+$/", $v)
                         && substr($v, 0, strlen('this')) !== 'this'
                     ) {
                         $v = "this.$v";
@@ -179,17 +191,31 @@ class MongoFinder
      */
     private function __translateOperator($operator)
     {
+        return self::translateOperator($operator);
+    }
+
+    public static function translateOperator($operator)
+    {
         switch ($operator) {
-            case '<': return '$lt';
-            case '<=': return '$lte';
-            case '>': return '$gt';
-            case '>=': return '$gte';
-            case '=': return '$eq';
+            case '<':
+                return '$lt';
+            case '<=':
+                return '$lte';
+            case '>':
+                return '$gt';
+            case '>=':
+                return '$gte';
+            case '=':
+                return '$eq';
             case '!=':
-            case '<>': return '$ne';
-            case 'NOT IN': return '$nin';
-            case 'IN': return '$in';
-            default: return $operator;
+            case '<>':
+                return '$ne';
+            case 'NOT IN':
+                return '$nin';
+            case 'IN':
+                return '$in';
+            default:
+                return $operator;
         }
     }
 
@@ -210,7 +236,6 @@ class MongoFinder
         } else {
             $this->_totalRows = 0;
         }
-
         return $cursor;
     }
 
@@ -236,12 +261,10 @@ class MongoFinder
         $results = [];
         $keyField = isset($this->_options['keyField'])
             ? $this->_options['keyField']
-            : '_id'
-        ;
+            : '_id';
         $valueField = isset($this->_options['valueField'])
             ? $this->_options['valueField']
-            : 'name'
-        ;
+            : 'name';
 
         $cursor = $this->find(['projection' => [$keyField => 1, $valueField => 1]]);
         foreach (iterator_to_array($cursor) as $value) {
@@ -280,7 +303,7 @@ class MongoFinder
                     return strtolower((string)$v) === 'desc' ? -1 : 1;
                 },
                 Hash::get($options, 'sort', [])
-                + Hash::normalize((array)$this->_options['order'])
+                    + Hash::normalize((array)$this->_options['order'])
             );
         }
     }
@@ -294,11 +317,12 @@ class MongoFinder
         if (!empty($this->_options['limit']) && !isset($options['limit'])) {
             $options['limit'] = $this->_options['limit'];
         }
-        if (!empty($this->_options['page']) && $this->_options['page'] > 1
+        if (
+            !empty($this->_options['page']) && $this->_options['page'] > 1
             && !empty($options['limit'])
             && !isset($options['skip'])
         ) {
-            $options['skip'] = $options['limit'] * ($this->_options['page'] -1);
+            $options['skip'] = $options['limit'] * ($this->_options['page'] - 1);
         }
     }
 
@@ -325,5 +349,16 @@ class MongoFinder
     public function count()
     {
         return $this->_totalRows;
+    }
+
+    /**
+     * setTotalRows
+     *
+     * @param  int $rows
+     * @return void
+     */
+    public function setTotalRows(int $rows)
+    {
+        $this->_totalRows = $rows;
     }
 }

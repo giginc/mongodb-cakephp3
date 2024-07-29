@@ -1,6 +1,6 @@
 <?php
 
-namespace Giginc\Mongodb\ORM;
+namespace Edsol\Mongodb\ORM;
 
 use ArrayObject;
 use BadMethodCallException;
@@ -23,8 +23,8 @@ class Table extends CakeTable
     private function __getCollection()
     {
         $driver = $this->getConnection()->getDriver();
-        if (!$driver instanceof \Giginc\Mongodb\Database\Driver\Mongodb) {
-            throw new \Exception("Driver must be an instance of 'Giginc\Mongodb\Database\Driver\Mongodb'");
+        if (!$driver instanceof \Edsol\Mongodb\Database\Driver\Mongodb) {
+            throw new \Exception("Driver must be an instance of 'Edsol\Mongodb\Database\Driver\Mongodb'");
         }
         $collection = $driver->getCollection($this->getTable());
 
@@ -66,11 +66,13 @@ class Table extends CakeTable
             }
             $results = new ResultSet($mongoCursor, $alias);
 
+            $documents = $results->toArray();
+            $query->setTotalRows(count($documents));
+
             if (isset($options['whitelist'])) {
-                return new MongoQuery($results->toArray(), $query->count());
-            } else {
-                return $results->toArray();
+                return new MongoQuery($documents, $query->count());
             }
+            return $documents;
         }
 
         throw new BadMethodCallException(
@@ -354,5 +356,31 @@ class Table extends CakeTable
         }
 
         return new \MongoDB\BSON\ObjectId();
+    }
+
+    /**
+     * count documents in collection 
+     *
+     * @param  array $filters
+     * @param  array $options
+     * @return int|null
+     */
+    public function count(array $filters = [], array $options = [])
+    {
+        $collection = $this->__getCollection();
+
+        MongoFinder::translateNestedArray($filters);
+        MongoFinder::translateConditions($filters);
+        return $collection->countDocuments($filters, $options);
+    }
+
+    /**
+     * @param  array $options
+     * @return int|null
+     */
+    public function estimatedCount(array $options = []){
+        $collection = $this->__getCollection();
+
+        return $collection->estimatedDocumentCount($options);
     }
 }

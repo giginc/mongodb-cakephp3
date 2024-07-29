@@ -1,10 +1,10 @@
 <?php
 
-namespace Giginc\Mongodb\Database;
+namespace Edsol\Mongodb\Database;
 
 use Cake\Database\Exception\MissingConnectionException;
-use Giginc\Mongodb\Database\Driver\Mongodb as Gigincdb;
-use Giginc\Mongodb\Database\Schema\MongoSchema;
+use Edsol\Mongodb\Database\Driver\Mongodb as Gigincdb;
+use Edsol\Mongodb\Database\Schema\MongoSchema;
 
 class Connection extends \Cake\Database\Connection
 {
@@ -19,7 +19,7 @@ class Connection extends \Cake\Database\Connection
     /**
      * Database Driver object
      *
-     * @var \Giginc\Mongodb\Database\Driver\Mongodb;
+     * @var \Edsol\Mongodb\Database\Driver\Mongodb;
      */
     protected $_driver = null;
 

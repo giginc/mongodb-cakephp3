@@ -1,6 +1,6 @@
 <?php
 
-namespace Giginc\Mongodb\Database\Driver;
+namespace Edsol\Mongodb\Database\Driver;
 
 use Exception;
 use MongoDB\Driver\ReadPreference;
@@ -183,6 +183,11 @@ class Mongodb
             $host = 'mongodb://';
         }
         $hostname = $this->_config['host'] . ':' . $this->_config['port'];
+
+        if ($this->_config['srv'] ?? false) {
+            $host = 'mongodb+srv://';
+            $hostname = $this->_config['host'];
+        }
 
         if (!empty($this->_config['login'])) {
             $host .= $this->_config['login'] . ':' . $this->_config['password'] . '@' . $hostname . '/' . $this->_config['database'];
